@@ -1,0 +1,253 @@
+```
+========== LAB Project 2==========
+Alyza Rahima Pramudya - 2502032125
+==================================
+```
+#Import all Requirements
+```{r}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(gridExtra)
+library(reshape2)
+library(psych)
+library(ROSE)
+library(caTools)
+library(randomForest)
+library(caret)
+```
+#Exploratory Data Analysis
+
+```{r}
+#Load Dataset
+df = read.csv('~/pramudya/matkul/data mining/LEC & LAB/LAB Project/WA_Fn-UseC_-Telco-Customer-Churn.csv')
+```
+
+```{r}
+head(df)
+```
+```{r}
+dim(df)
+```
+```{r}
+str(df)
+```
+```{r}
+cat('Senior Citizen\n')
+unique(df$SeniorCitizen)
+```
+```{r}
+df$SeniorCitizen <- ifelse(df$SeniorCitizen == 1, "Yes", "No")
+```
+
+```{r}
+str(df)
+```
+```{r}
+summary(df)
+```
+```{r}
+df$gender <- factor(df$gender)
+df$SeniorCitizen <- factor(df$SeniorCitizen)
+df$Partner <- factor(df$Partner)
+df$Dependents <- factor(df$Dependents) 
+df$PhoneService <- factor(df$PhoneService)
+df$MultipleLines <- factor(df$MultipleLines)
+df$InternetService <- factor(df$InternetService)
+df$OnlineSecurity <- factor(df$OnlineSecurity)
+df$OnlineBackup <- factor(df$OnlineBackup)
+df$DeviceProtection <- factor(df$DeviceProtection)
+df$TechSupport <- factor(df$TechSupport)
+df$StreamingTV <- factor(df$StreamingTV)
+df$StreamingMovies <- factor(df$StreamingMovies)
+df$Contract <- factor(df$Contract)
+df$PaperlessBilling <- factor(df$PaperlessBilling)
+df$PaymentMethod <- factor(df$PaymentMethod)
+df$Churn <- factor(df$Churn)
+```
+
+```{r}
+summary(df)
+```
+```{r}
+colSums(is.na(df))
+```
+```{r}
+df_na <- df[is.na(df$TotalCharges), ]
+relocate(df_na, customerID, TotalCharges)
+```
+```{r}
+df$TotalCharges[is.na(df$TotalCharges)] = 0
+colSums(is.na(df))
+```
+```{r}
+sum(duplicated(df))
+```
+```{r}
+plot1 <- ggplot(df, aes(x=tenure)) + geom_boxplot() + ggtitle('Tenure Boxplot')
+plot2 <- ggplot(df, aes(x=MonthlyCharges)) + geom_boxplot()  + ggtitle('Monthly Charges Boxplot')
+plot3 <- ggplot(df, aes(x=TotalCharges)) + geom_boxplot() + ggtitle('Total Charges Boxplot')
+grid.arrange(plot1, plot2, plot3, nrow = 3)
+```
+
+
+```{r}
+plot4 <- ggplot(df, aes(x=TotalCharges)) + geom_histogram(bins=30, fill="#C3ACD0", alpha=0.7, color="#674188") + ggtitle("Histogram of Total Charges")
+ggplotly(plot4)
+```
+```{r}
+ZeroTC <- subset(df, TotalCharges == 0)
+unique(ZeroTC$tenure)
+```
+
+
+```{r}
+average_tenure <- aggregate(tenure ~ Churn, data = df, FUN = mean)
+average_tenure$tenure <- round(average_tenure$tenure)
+
+plot5 <- ggplot(average_tenure, aes(x = Churn, y = tenure, fill = Churn)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = tenure), vjust = -0.5) +
+  labs(x = "Churn", y = "Average Tenure", title = "Average Tenure of Former and Current Customers") +
+  scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Current", "Former"))
+
+print(plot5)
+```
+```{r}
+average_MonthlyCharge <- aggregate(MonthlyCharges ~ Churn, data = df, FUN = mean)
+
+plot6 <- ggplot(average_MonthlyCharge, aes(x = Churn, y = MonthlyCharges, fill = Churn)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0('$', round(MonthlyCharges, 1))), vjust = -0.5) +
+  labs(x = "Churn", y = "Average Monthly Charges", title = "Average Monthly Charges of Former and Current Customers") +
+  scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Current", "Former"))
+
+print(plot6)
+```
+```{r}
+average_charges <- aggregate(MonthlyCharges ~ Churn + Contract, data = df, FUN = mean)
+
+plot7 <- ggplot(average_charges, aes(x = Contract, y = MonthlyCharges, fill = Churn)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = paste0('$', round(MonthlyCharges, 1))), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(x = "Contract", y = "Average Monthly Charges", title = "Average Monthly Charges by Contract Type") +
+  scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Current", "Former"))
+
+print(plot7)
+```
+```{r}
+plot8 <- ggplot(df, aes(x = InternetService, fill = Churn)) +
+  geom_bar(position = "fill") +
+  labs(x = "Internet Service", y = "Proportion", fill = "Churn") +
+  ggtitle("Churn by Internet Service") + scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Current", "Former"))
+print(plot8)
+```
+```{r}
+plot9 <- ggplot(df, aes(x = Contract, fill = Churn)) +
+  geom_bar(position = "dodge") +
+  labs(x = "Contract Type", y = "Proportion", fill = "Churn") +
+  ggtitle("Churn by Contract Type") + scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Current", "Former"))
+print(plot9)
+```
+```{r}
+mtm <- subset(df, df$Contract == "Month-to-month" & df$Churn == "Yes" )
+min(mtm$tenure)
+```
+
+```{r}
+plot10 <- ggplot(df, aes(x = SeniorCitizen, fill = Churn)) +
+  geom_bar(position = "dodge") +
+  labs(x = "Senior Citizen", y = "Count", fill = "Churn") +
+  ggtitle("Churn by Senior Citizen")+ scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Current", "Former"))
+print(plot10)
+```
+```{r}
+numeric_vars <- df[, c("tenure", "MonthlyCharges", "TotalCharges")]
+cor(numeric_vars)
+```
+```{r}
+corr_melted <- melt(cor(numeric_vars))
+plot11 <- ggplot(corr_melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#F7EFE5", mid = "#C3ACD0", high = "#674188",
+                       name = "Pearson\nCorrelation") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust = 1))
+print(plot11)
+```
+```{r}
+plot12 <- ggplot(df, aes(x = Churn, fill = Churn)) +
+  geom_bar(position = "dodge") +
+  labs(x = "Churn", y = "Count", fill = "Churn") +
+  ggtitle("Frequency of Churn") +
+  scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Non-Churned", "Churned"))
+
+print(plot12)
+```
+
+```{r}
+table(df$Churn)
+
+df_balance <- ovun.sample(Churn ~ ., data = df, method = "over",N = 10348)$data
+```
+
+```{r}
+plot13 <- ggplot(df_balance, aes(x = Churn, fill = Churn)) +
+  geom_bar(position = "dodge") +
+  labs(x = "Churn", y = "Count", fill = "Churn") +
+  ggtitle("frequency of churn after oversampling") +
+  scale_fill_manual(values = c("#674188", "#C3ACD0"), labels = c("Non-Churned", "Churned"))
+
+print(plot13)
+```
+```{r}
+set.seed(1) 
+sample <- sample.split(df_balance$Churn, SplitRatio = 0.8)
+train = subset(df_balance, sample == TRUE)
+test = subset(df_balance, sample == FALSE)
+```
+
+```{r}
+library(randomForest)
+model <- randomForest(Churn ~ .,   data=train)
+print(model)
+```
+```{r}
+predictions <- predict(model, newdata = test)
+```
+
+```{r}
+eval <- confusionMatrix(data=predictions, reference = test$Churn)
+eval
+```
+```{r}
+plot(model)
+```
+
+```{r}
+importance(model)
+```
+
+```{r}
+varImpPlot(model)
+```
+```{r}
+tuneParam <- tuneRF(train,train$Churn,stepFactor = 1.2, improve = 0.01, trace=T, plot= T) 
+tuneParam
+```
+```{r}
+n <- names(train)
+excluded_vars <- c("Churn", "PhoneService")
+included_vars <- n[!(n %in% excluded_vars)]
+f <- as.formula(paste("Churn ~", paste(included_vars, collapse = " + ")))
+f
+```
+```{r}
+modelTuned <- randomForest(f, data = train, mtry = 4)
+print(modelTuned)
+```
+```{r}
+TunedPredictions <- predict(modelTuned, newdata = test)
+evalTuned <- confusionMatrix(data=TunedPredictions, reference = test$Churn)
+evalTuned
+```
+
