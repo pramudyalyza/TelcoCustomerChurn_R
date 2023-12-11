@@ -6,7 +6,7 @@ This project focuses on creating a model to predict customer churn in Telco, whi
 * Soal 2 - Telco Customer Churn.pdf: A pdf file contains explanation for each line of code in R Markdown
 
 **Dataset**<br>
-The dataset used in this analysis is sourced from Kaggle and can be accessed at the following link: [Telco Customer Churn](https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)). Please download the dataset from the provided link before running the code.
+The dataset used in this analysis is sourced from Kaggle and can be accessed at the following link: [Telco Customer Churn](https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who](https://www.kaggle.com/datasets/blastchar/telco-customer-churn). Please download the dataset from the provided link before running the code.
 
 **Column Description**<br>
 The dataset used for this project contains information about Telco customers' demographic characteristics and account details. It includes the following columns:
